@@ -2,6 +2,11 @@ package main
 
 import (
 	"errors"
+	"fmt"
+	"github.com/golang-jwt/jwt/v5"
+	"golang.org/x/crypto/bcrypt"
+	"time"
+
 	//"errors"
 	"github.com/gin-gonic/gin"
 	"net/http"
@@ -20,6 +25,20 @@ type author struct {
 	Name string `json:"name"`
 }
 
+type user struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+type Claims struct {
+	Username string `json:"username"`
+	jwt.RegisteredClaims
+}
+
+var jwtKey = []byte("your_secret_key")
+
+var users []user
+
 var books = []book{
 	{ID: "1", Title: "In Search of Lost Time", Author: "Marchel", Quantity: 2, Genre: "Action"},
 	{ID: "2", Title: "The Great Gatsby", Author: "Scott", Quantity: 5, Genre: "Action"},
@@ -31,6 +50,106 @@ var authors = []author{
 	{ID: "1", Name: "Marchel"},
 	{ID: "2", Name: "Scott"},
 	{ID: "3", Name: "Leo Mass"},
+}
+
+func signUp(c *gin.Context) {
+	var newUser user
+	if err := c.BindJSON(&newUser); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "invalid request"})
+		return
+	}
+
+	for _, u := range users {
+		if u.Email == newUser.Email {
+			c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "User alrerady exists"})
+			return
+		}
+	}
+
+	hashedPass, err := bcrypt.GenerateFromPassword([]byte(newUser.Password), bcrypt.DefaultCost)
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Problem to create hash"})
+		return
+	}
+
+	newUser.Password = string(hashedPass)
+	users = append(users, newUser)
+
+	c.IndentedJSON(http.StatusOK, users)
+
+}
+
+func login(c *gin.Context) {
+	var newUser user
+	if err := c.BindJSON(&newUser); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "invalid request"})
+		return
+	}
+
+	for _, u := range users {
+		if u.Email == newUser.Email {
+			err := bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(newUser.Password))
+			if err == nil {
+				claims := &Claims{
+					Username: newUser.Email,
+					RegisteredClaims: jwt.RegisteredClaims{
+						ExpiresAt: jwt.NewNumericDate(time.Now().Add(5 * time.Minute)),
+					},
+				}
+
+				token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+				tokenString, err := token.SignedString(jwtKey)
+
+				//fmt.Println(tokenString)
+
+				if err != nil {
+					c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Could not create token"})
+					return
+				}
+				c.SetCookie("token", tokenString, 300, "/", "localhost", false, true)
+				c.IndentedJSON(http.StatusOK, gin.H{"message": "Logged in successfully"})
+
+				return
+			}
+
+		}
+	}
+
+	c.IndentedJSON(http.StatusNotFound, gin.H{"message": "invalid credential"})
+
+}
+
+func authMiddleware(c *gin.Context) {
+
+	fmt.Println("Middle")
+	var tokenString string
+
+	cookie, err := c.Cookie("token")
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "Missing token"})
+		return
+	}
+	tokenString = cookie
+
+	fmt.Println(cookie)
+
+	claims := &Claims{}
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return jwtKey, nil
+	})
+
+	if err != nil || !token.Valid {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "Invalid or expired token"})
+		return
+	}
+
+	// Store username in context for use in routes
+	c.Set("username", claims.Username)
+	c.Next()
 }
 
 func getBooks(c *gin.Context) {
@@ -210,15 +329,16 @@ func findAuthor(c *gin.Context) {
 
 func main() {
 	router := gin.Default()
-	router.GET("/books", getBooks)            // see total book list
-	router.POST("/books", createBook)         // add a new book
-	router.GET("/books/:id", bookbyId)        // find book by id
-	router.PATCH("/checkout", checkOutBook)   // take a book from library
-	router.PATCH("/checkin", checkInBook)     // submit a book in library
-	router.PATCH("/updatebook", updateBook)   //update a book with json
-	router.PATCH("/deleteBook", deleteBook)   //delete a book by id
-	router.GET("/author/:name", bookbyAuthor) // find book by  author name
-	router.GET("/genre/:name", bookbyGenre)   // find book by Genre
-	router.GET("/authorname/:id", findAuthor) // id to author name
+	router.POST("/signup", signUp)                            // Add a new User
+	router.POST("/login", login)                              // user login
+	router.POST("/books", authMiddleware, createBook)         // add a new book
+	router.GET("/books/:id", authMiddleware, bookbyId)        // find book by id
+	router.PATCH("/checkout", authMiddleware, checkOutBook)   // take a book from library
+	router.PATCH("/checkin", authMiddleware, checkInBook)     // submit a book in library
+	router.PATCH("/updatebook", authMiddleware, updateBook)   //update a book with json
+	router.PATCH("/deleteBook", authMiddleware, deleteBook)   //delete a book by id
+	router.GET("/author/:name", authMiddleware, bookbyAuthor) // find book by  author name
+	router.GET("/genre/:name", authMiddleware, bookbyGenre)   // find book by Genre
+	router.GET("/authorname/:id", authMiddleware, findAuthor) // id to author name
 	router.Run("localhost:8080")
 }
