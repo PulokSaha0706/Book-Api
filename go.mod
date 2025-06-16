@@ -1,4 +1,4 @@
-module CLIBookApi
+module BookApi
 
 go 1.24.3
 

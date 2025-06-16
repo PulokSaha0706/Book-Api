@@ -1,7 +1,7 @@
 package cmd
 
 import "github.com/spf13/cobra"
-import "CLIBookApi/api"
+import "BookApi/api"
 
 var Port int
 

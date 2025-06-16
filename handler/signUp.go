@@ -1,8 +1,8 @@
 package handler
 
 import (
-	"CLIBookApi/data"
-	"CLIBookApi/models"
+	"BookApi/data"
+	"BookApi/models"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 	"net/http"

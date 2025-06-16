@@ -1,10 +1,10 @@
 package api
 
 import (
-	"CLIBookApi/data"
-	"CLIBookApi/handler"
-	"CLIBookApi/middleware"
-	"CLIBookApi/models"
+	"BookApi/data"
+	"BookApi/handler"
+	"BookApi/middleware"
+	"BookApi/models"
 	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
