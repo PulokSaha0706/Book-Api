@@ -1,4 +1,4 @@
-module awesomeProject1
+module dev1
 
 go 1.24
 
