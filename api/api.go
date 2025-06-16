@@ -1,9 +1,12 @@
 package api
 
 import (
-	"dev1/data"
-	"dev1/models"
+	"CLIBookApi/data"
+	"CLIBookApi/handler"
+	"CLIBookApi/middleware"
+	"CLIBookApi/models"
 	"errors"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
@@ -181,4 +184,20 @@ func FindAuthor(c *gin.Context) {
 
 	c.IndentedJSON(http.StatusNotFound, gin.H{"message": "Authort not found"})
 
+}
+
+func Start(port int) {
+	router := gin.Default()
+	router.POST("/signup", handler.SignUp)                               // Add a new User
+	router.POST("/login", handler.Login)                                 // user login
+	router.POST("/books", middleware.AuthMiddleware, CreateBook)         // add a new book
+	router.GET("/books/:id", middleware.AuthMiddleware, BookbyId)        // find book by id
+	router.PATCH("/checkout", middleware.AuthMiddleware, CheckOutBook)   // take a book from library
+	router.PATCH("/checkin", middleware.AuthMiddleware, CheckInBook)     // submit a book in library
+	router.PATCH("/updatebook", middleware.AuthMiddleware, UpdateBook)   //update a book with json
+	router.PATCH("/deleteBook", middleware.AuthMiddleware, DeleteBook)   //delete a book by id
+	router.GET("/author/:name", middleware.AuthMiddleware, BookbyAuthor) // find book by  author name
+	router.GET("/genre/:name", middleware.AuthMiddleware, BookbyGenre)   // find book by Genre
+	router.GET("/authorname/:id", middleware.AuthMiddleware, FindAuthor) // id to author name
+	router.Run(fmt.Sprintf("localhost:%d", port))
 }

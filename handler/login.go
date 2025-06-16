@@ -1,9 +1,9 @@
 package handler
 
 import (
-	"dev1/data"
-	"dev1/middleware"
-	"dev1/models"
+	"CLIBookApi/data"
+	"CLIBookApi/middleware"
+	"CLIBookApi/models"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"

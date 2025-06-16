@@ -1,8 +1,8 @@
 package handler
 
 import (
-	"dev1/data"
-	"dev1/models"
+	"CLIBookApi/data"
+	"CLIBookApi/models"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 	"net/http"

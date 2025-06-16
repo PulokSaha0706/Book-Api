@@ -1,6 +1,6 @@
 package data
 
-import "dev1/models"
+import "CLIBookApi/models"
 
 var Users []models.User
 
