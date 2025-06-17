@@ -199,5 +199,5 @@ func Start(port int) {
 	router.GET("/author/:name", middleware.AuthMiddleware, BookbyAuthor) // find book by  author name
 	router.GET("/genre/:name", middleware.AuthMiddleware, BookbyGenre)   // find book by Genre
 	router.GET("/authorname/:id", middleware.AuthMiddleware, FindAuthor) // id to author name
-	router.Run(fmt.Sprintf("localhost:%d", port))
+	router.Run(fmt.Sprintf(":%d", port))
 }
