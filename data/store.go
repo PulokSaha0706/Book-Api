@@ -1,6 +1,6 @@
 package data
 
-import "dev1/models"
+import "BookApi/models"
 
 var Users []models.User
 
