@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bookapi-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: bookapi
+  template:
+    metadata:
+      labels:
+        app: bookapi
+    spec:
+      containers:
+      - name: bookapi
+        image: puloksaha/bookapi:latest
+        args: ["start", "-p", "9090"]
+        ports:
+        - containerPort: 9090
+
+
